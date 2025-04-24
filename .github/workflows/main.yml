@@ -8,9 +8,8 @@ permissions:
   secrets: read
 
 env:
-  AZURE_CONTAINER_APP_NAME: m-yousaf-rana
+  AZURE_CONTAINER_APP_NAME: yousaf-rana-app
   AZURE_GROUP_NAME: huggingface-acr
-  REPO: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -53,6 +52,15 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: 🔧 Lowercase the repo name again (for deploy job)
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: 🐞 Debug environment variables
+        run: |
+          echo "Container App Name: ${{ env.AZURE_CONTAINER_APP_NAME }}"
+          echo "Resource Group Name: ${{ env.AZURE_GROUP_NAME }}"
+          echo "Repo: ${{ env.REPO }}"
+
       - name: 🚀 Deploy to Azure Container App from ACR
         uses: azure/CLI@v1
         with:
@@ -60,13 +68,13 @@ jobs:
             az config set extension.use_dynamic_install=yes_without_prompt
             echo "🔗 Set ACR as the container registry"
             az containerapp registry set \
-              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.AZURE_GROUP_NAME }} \
+              -n ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              -g ${{ env.AZURE_GROUP_NAME }} \
               --server ${{ secrets.ACR_LOGIN_SERVER }} \
               --username ${{ secrets.ACR_USERNAME }} \
               --password ${{ secrets.ACR_PASSWORD }}
             echo "📦 Update container app with new image"
             az containerapp update \
-              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.AZURE_GROUP_NAME }} \
+              -n ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              -g ${{ env.AZURE_GROUP_NAME }} \
               --image ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:${{ github.sha }}
