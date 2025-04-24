@@ -8,13 +8,12 @@ permissions:
   secrets: read
 
 env:
-  AZURE_CONTAINER_APP_NAME: yousaf-rana-app
+  AZURE_CONTAINER_APP_NAME: m-yousaf-rana
   AZURE_GROUP_NAME: huggingface-acr
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -39,39 +38,37 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:latest
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ github.repository }}:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ github.repository }}:${{ github.sha }}
 
   deploy:
-  runs-on: ubuntu-latest
-  needs: build-and-push
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    env:
+      AZURE_CONTAINER_APP_NAME: m-yousaf-rana
+      AZURE_GROUP_NAME: huggingface-acr
+      REPO: ${{ github.repository }}
 
-  steps:
-    - name: 🔐 Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    steps:
+      - name: 🔐 Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: 🔧 Set environment variables for deploy
-      run: |
-        echo "AZURE_CONTAINER_APP_NAME=m-yousaf-rana" >> $GITHUB_ENV
-        echo "AZURE_GROUP_NAME=huggingface-acr" >> $GITHUB_ENV
-        echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-    - name: 🚀 Deploy to Azure Container App from ACR
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          az config set extension.use_dynamic_install=yes_without_prompt
-          echo "🔗 Set ACR as the container registry"
-          az containerapp registry set \
-            -n $AZURE_CONTAINER_APP_NAME \
-            -g $AZURE_GROUP_NAME \
-            --server ${{ secrets.ACR_LOGIN_SERVER }} \
-            --username ${{ secrets.ACR_USERNAME }} \
-            --password ${{ secrets.ACR_PASSWORD }}
-          echo "📦 Update container app with new image"
-          az containerapp update \
-            -n $AZURE_CONTAINER_APP_NAME \
-            -g $AZURE_GROUP_NAME \
-            --image ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:${{ github.sha }}
+      - name: 🚀 Deploy to Azure Container App from ACR
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az config set extension.use_dynamic_install=yes_without_prompt
+            echo "🔗 Set ACR as the container registry"
+            az containerapp registry set \
+              -n "${{ env.AZURE_CONTAINER_APP_NAME }}" \
+              -g "${{ env.AZURE_GROUP_NAME }}" \
+              --server "${{ secrets.ACR_LOGIN_SERVER }}" \
+              --username "${{ secrets.ACR_USERNAME }}" \
+              --password "${{ secrets.ACR_PASSWORD }}"
+            echo "📦 Update container app with new image"
+            az containerapp update \
+              -n "${{ env.AZURE_CONTAINER_APP_NAME }}" \
+              -g "${{ env.AZURE_GROUP_NAME }}" \
+              --image "${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:${{ github.sha }}"
