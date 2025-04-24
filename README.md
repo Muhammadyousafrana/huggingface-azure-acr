@@ -29,3 +29,10 @@ it will output something like this:
 ```
 
 3. copy this json output and go to repository setting and in the secret section create a secrect for `Action` with the name `AZURE_CREDENTIALS` and put the json output and save it
+4. After deployment you can see the logs by using the following command:
+```sh
+az containerapp logs show \
+  --name <container-app-name> \
+  --resource-group <resource-group-name>
+
+```
