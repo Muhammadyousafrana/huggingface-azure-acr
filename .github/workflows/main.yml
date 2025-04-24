@@ -1,4 +1,4 @@
-name: Build & Push to AZURE_ACR
+name: Build & Push to ACR
 
 on:
   workflow_dispatch:
@@ -24,6 +24,9 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
+      - name: 🔧 Lowercase the repo path
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: 🛠️ Build and Push Docker image to ACR
         uses: docker/build-push-action@v5
         with:
@@ -31,5 +34,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPO_NAME }}:latest
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.ACR_REPO_NAME }}:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.REPO }}:${{ github.sha }}
