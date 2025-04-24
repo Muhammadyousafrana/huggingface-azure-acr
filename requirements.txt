@@ -1,0 +1,8 @@
+uvicorn[standard]
+gunicorn
+fastapi
+tf-keras
+transformers
+torch
+python-multipart
+pydantic
